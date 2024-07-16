@@ -2,10 +2,15 @@ package io.github.espeditomelo.scheduleapi.api.rest;
 
 import io.github.espeditomelo.scheduleapi.model.entity.Contact;
 import io.github.espeditomelo.scheduleapi.model.repository.ContactRepository;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.servlet.http.Part;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,4 +50,21 @@ public class ContactController {
         });
     }
 
+    @PutMapping("{id}/photo")
+    public byte[] addPhoto(@PathVariable Integer id, @RequestParam("photo")Part file) {
+        Optional<Contact> contact = repository.findById(id);
+        return contact.map( c -> {
+            try {
+                InputStream is = file.getInputStream();
+                byte[] bytes = new byte[(int) file.getSize()];
+                IOUtils.readFully(is, bytes);
+                c.setPhoto(bytes);
+                this.repository.save(c);
+                is.close();
+                return bytes;
+            } catch (IOException e) {
+                return null;
+            }
+        }).orElse(null);
+    }
 }
